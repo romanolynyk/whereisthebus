@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M104 Bus Tracker - 41st & 8th Ave</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚌 M104 Bus Tracker</h1>
+            <p class="subtitle">Northbound at 41st Street & 8th Avenue</p>
+        </header>
+        
+        <main>
+            <div class="bus-info">
+                <div class="route-info">
+                    <div class="route-number">M104</div>
+                    <div class="route-details">
+                        <div class="direction">Northbound</div>
+                        <div class="location">41st Street & 8th Avenue</div>
+                    </div>
+                </div>
+                
+                <div class="next-buses">
+                    <h2>Next 3 Buses</h2>
+                    <div id="bus-times" class="bus-times">
+                        <div class="loading">Loading bus times...</div>
+                    </div>
+                </div>
+                
+                <div class="last-updated">
+                    <span id="last-updated">Last updated: Never</span>
+                    <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Data provided by MTA Bus Time API</p>
+        </footer>
+    </div>
+    
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
