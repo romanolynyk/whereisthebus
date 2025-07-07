@@ -6,9 +6,9 @@ services:
   - type: web
     name: m104-bus-tracker
     runtime: node
-    plan: starter
+    plan: Professional
     previews:
-      plan: starter
+      generation: automatic
     buildCommand: npm install
     startCommand: npm start
     envVars:
