@@ -1,0 +1,29 @@
+previews:
+  generation: automatic
+  expireAfterDays: 7
+
+services:
+  - type: web
+    name: m104-bus-tracker
+    runtime: node
+    plan: starter
+    previews:
+      plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MTA_API_KEY
+        sync: false  # This will be set manually in Render dashboard
+      - key: STOP_ID
+        value: 404052
+        previewValue: 404052
+      - key: ROUTE_ID
+        value: M104
+        previewValue: M104
+      - key: DIRECTION
+        value: N
+        previewValue: N
+      - key: REFRESH_INTERVAL
+        value: 30000
+        previewValue: 30000
+    healthCheckPath: /health 

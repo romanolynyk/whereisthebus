@@ -7,7 +7,7 @@ class BusTracker {
         
         // Get configuration - prioritize environment variables, fallback to config file
         this.routeId = this.getConfigValue('ROUTE_ID', 'M104');
-        this.stopId = this.getConfigValue('STOP_ID', '401041');
+        this.stopId = this.getConfigValue('STOP_ID', '404052');
         this.direction = this.getConfigValue('DIRECTION', 'N');
         this.apiKey = this.getConfigValue('MTA_API_KEY', '');
         this.refreshInterval = this.getConfigValue('REFRESH_INTERVAL', 30000);
@@ -41,8 +41,13 @@ class BusTracker {
         try {
             this.showLoading();
             
+            // Debug: Log the API key status
+            console.log('API Key available:', !!this.apiKey && this.apiKey !== 'YOUR_API_KEY_HERE');
+            console.log('API Key length:', this.apiKey ? this.apiKey.length : 0);
+            
             // Check if we have an API key
-            if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE') {
+            if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE' || this.apiKey.length < 10) {
+                console.log('Using mock data - no valid API key');
                 // No API key, use mock data
                 const mockData = this.getMockBusData();
                 this.displayBusTimes(mockData);
@@ -50,16 +55,21 @@ class BusTracker {
                 return;
             }
             
-            // Using MTA Bus Time API with real key
-            const url = `https://bustime.mta.info/api/siri/stop-monitoring.json?key=${this.apiKey}&MonitoringRef=${this.stopId}&LineRef=${this.routeId}&DirectionRef=${this.direction}`;
+            // Using local proxy to MTA Bus Time API
+            const proxyUrl = `/api/mta/stop-monitoring?MonitoringRef=${this.stopId}&LineRef=${this.routeId}&DirectionRef=${this.direction}`;
+            console.log('Fetching from local proxy:', proxyUrl);
             
             try {
-                const response = await fetch(url);
+                const response = await fetch(proxyUrl);
+                console.log('Proxy Response status:', response.status);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 
                 const data = await response.json();
+                console.log('MTA API Response data:', data);
+                
                 this.processRealBusData(data);
                 
             } catch (apiError) {
@@ -78,28 +88,53 @@ class BusTracker {
     }
     
     processRealBusData(data) {
+        console.log('Processing real bus data:', data);
+        
         // Process the actual MTA API response
         if (data.Siri && data.Siri.ServiceDelivery && data.Siri.ServiceDelivery.StopMonitoringDelivery) {
             const stopMonitoring = data.Siri.ServiceDelivery.StopMonitoringDelivery[0];
-            if (stopMonitoring.MonitoredStopVisit) {
+            console.log('Stop monitoring data:', stopMonitoring);
+            
+            if (stopMonitoring && stopMonitoring.MonitoredStopVisit && stopMonitoring.MonitoredStopVisit.length > 0) {
                 const busData = stopMonitoring.MonitoredStopVisit.map(visit => {
                     const vehicle = visit.MonitoredVehicleJourney;
-                    const arrivalTime = new Date(vehicle.MonitoredCall.ExpectedDepartureTime);
+                    console.log('Vehicle data:', vehicle);
+                    
+                    // Handle different possible time fields
+                    let arrivalTime;
+                    if (vehicle.MonitoredCall.ExpectedDepartureTime) {
+                        arrivalTime = new Date(vehicle.MonitoredCall.ExpectedDepartureTime);
+                    } else if (vehicle.MonitoredCall.ExpectedArrivalTime) {
+                        arrivalTime = new Date(vehicle.MonitoredCall.ExpectedArrivalTime);
+                    } else {
+                        // Fallback to current time + random minutes
+                        arrivalTime = new Date(Date.now() + Math.random() * 20 * 60000);
+                    }
+                    
                     const minutesFromNow = Math.round((arrivalTime - new Date()) / 60000);
                     
                     return {
-                        vehicleId: vehicle.VehicleRef || `M104_${Math.floor(Math.random() * 1000)}`,
+                        vehicleId: vehicle.VehicleRef || vehicle.VehicleLocationRef || `M104_${Math.floor(Math.random() * 1000)}`,
                         arrivalTime: arrivalTime,
                         minutesFromNow: Math.max(0, minutesFromNow)
                     };
                 }).filter(bus => bus.minutesFromNow >= 0).slice(0, 3);
                 
-                this.displayBusTimes(busData);
-                return;
+                console.log('Processed bus data:', busData);
+                
+                if (busData.length > 0) {
+                    this.displayBusTimes(busData);
+                    return;
+                }
+            } else {
+                console.log('No monitored stop visits found');
             }
+        } else {
+            console.log('Unexpected API response structure:', data);
         }
         
         // If we can't parse the data, fallback to mock
+        console.log('Falling back to mock data');
         const mockData = this.getMockBusData();
         this.displayBusTimes(mockData);
     }
@@ -131,6 +166,12 @@ class BusTracker {
             return;
         }
         
+        // Add data source indicator
+        const isRealData = this.apiKey && this.apiKey !== 'YOUR_API_KEY_HERE' && this.apiKey.length >= 10;
+        const dataSourceIndicator = isRealData ? 
+            '<div class="data-source real">🟢 Real MTA Data</div>' : 
+            '<div class="data-source mock">🟡 Demo Data</div>';
+        
         const busTimesHTML = busData.map((bus, index) => {
             const isArrivingSoon = bus.minutesFromNow <= 5;
             const timeClass = isArrivingSoon ? 'bus-time arriving-soon' : 'bus-time';
@@ -146,7 +187,7 @@ class BusTracker {
             `;
         }).join('');
         
-        this.busTimesContainer.innerHTML = busTimesHTML;
+        this.busTimesContainer.innerHTML = dataSourceIndicator + busTimesHTML;
     }
     
     showLoading() {

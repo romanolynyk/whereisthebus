@@ -20,16 +20,24 @@ A simple, modern web application that shows the next 3 northbound M104 bus times
    npm install
    ```
 
-2. **Configure the Application:**
-   - Copy `config.sample.js` to `config.js`
-   - Replace `YOUR_API_KEY_HERE` with your actual MTA API key in `config.js`
-
-3. **Run the Application:**
+2. **Run the Application:**
    ```bash
    npm start
    ```
    - Open `http://localhost:3000` in your web browser
-   - The app will automatically fetch real bus data
+   - The app will automatically fetch real bus data using environment variables
+
+### Production Deployment (Render)
+
+1. **Automatic Deployment:**
+   - Connect your GitHub repository to Render
+   - Render will automatically deploy using the `render.yaml` configuration
+   - Preview environments will be created for each pull request
+
+2. **Environment Variables:**
+   - Set `MTA_API_KEY` in your Render dashboard with your actual API key
+   - Other environment variables are configured in `render.yaml`
+   - The API key is NOT stored in code for security
 
 ### Production Deployment (Render)
 
@@ -56,7 +64,8 @@ whereisthebus/
 ├── script.js           # JavaScript for bus tracking logic
 ├── server.js           # Express server for production deployment
 ├── package.json        # Node.js dependencies and scripts
-├── config.sample.js    # Sample configuration file (copy to config.js)
+├── render.yaml         # Render deployment configuration
+├── config.sample.js    # Sample configuration file (for reference)
 ├── .gitignore          # Git ignore rules
 └── README.md           # This file
 ```
