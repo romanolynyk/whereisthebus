@@ -1,4 +1,4 @@
-# M104 Bus Tracker
+# M20 Bus Tracker
 
 A simple, modern web application that shows the next 3 northbound M104 bus times at 41st Street & 8th Avenue in New York City.
 
