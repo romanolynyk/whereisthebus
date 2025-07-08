@@ -12,12 +12,6 @@ services:
     envVars:
       - key: MTA_API_KEY
         sync: false  # This will be set manually in Render dashboard
-      - key: STOP_ID
-        value: 404052
-        previewValue: 404052
-      - key: ROUTE_ID
-        value: M20
-        previewValue: M20
       - key: REFRESH_INTERVAL
         value: 30000
         previewValue: 30000

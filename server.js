@@ -70,13 +70,11 @@ app.get('/health', (req, res) => {
     res.status(200).json({ 
         status: 'ok', 
         timestamp: new Date().toISOString(),
-        environment: process.env.NODE_ENV || 'development',
-        stopId: process.env.STOP_ID || '404052'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Stop ID: ${process.env.STOP_ID || '404052'}`);
 }); 
