@@ -1,0 +1,18 @@
+previews:
+  generation: automatic
+  expireAfterDays: 7
+
+services:
+  - type: web
+    name: m20-bus-tracker
+    runtime: node
+    plan: professional
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MTA_API_KEY
+        sync: false  # This will be set manually in Render dashboard
+      - key: REFRESH_INTERVAL
+        value: 30000
+        previewValue: 30000
+    healthCheckPath: /health 

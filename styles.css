@@ -199,6 +199,27 @@ footer {
     font-size: 0.9rem;
 }
 
+.data-source {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.data-source.real {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.data-source.mock {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
 @media (max-width: 480px) {
     .container {
         padding: 16px;
