@@ -64,4 +64,10 @@ yarn-debug.log*
 yarn-error.log*
 
 # Dependencies (if you add any later)
-node_modules/ 
+node_modules/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore config file with API key
+config.js 

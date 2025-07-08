@@ -6,10 +6,6 @@ class BusTracker {
         this.refreshBtn = document.getElementById('refresh-btn');
         
         // Get configuration - prioritize environment variables, fallback to config file
-        this.routeId = this.getConfigValue('ROUTE_ID', 'M104');
-        this.stopId = this.getConfigValue('STOP_ID', '404052');
-        this.direction = this.getConfigValue('DIRECTION', 'N');
-        this.apiKey = this.getConfigValue('MTA_API_KEY', '');
         this.refreshInterval = this.getConfigValue('REFRESH_INTERVAL', 30000);
         
         this.init();
@@ -41,22 +37,8 @@ class BusTracker {
         try {
             this.showLoading();
             
-            // Debug: Log the API key status
-            console.log('API Key available:', !!this.apiKey && this.apiKey !== 'YOUR_API_KEY_HERE');
-            console.log('API Key length:', this.apiKey ? this.apiKey.length : 0);
-            
-            // Check if we have an API key
-            if (!this.apiKey || this.apiKey === 'YOUR_API_KEY_HERE' || this.apiKey.length < 10) {
-                console.log('Using mock data - no valid API key');
-                // No API key, use mock data
-                const mockData = this.getMockBusData();
-                this.displayBusTimes(mockData);
-                this.updateLastUpdated();
-                return;
-            }
-            
             // Using local proxy to MTA Bus Time API
-            const proxyUrl = `/api/mta/stop-monitoring?MonitoringRef=${this.stopId}&LineRef=${this.routeId}&DirectionRef=${this.direction}`;
+            const proxyUrl = `/api/mta/stop-monitoring`;
             console.log('Fetching from local proxy:', proxyUrl);
             
             try {
@@ -89,16 +71,30 @@ class BusTracker {
     
     processRealBusData(data) {
         console.log('Processing real bus data:', data);
+
+        // The MTA API can return errors in a few different ways.
+        // We check for a common error format that appears in different response types.
+        if (data.Siri && data.Siri.ServiceDelivery) {
+            const serviceDelivery = data.Siri.ServiceDelivery;
+            const deliveryTypes = ['VehicleMonitoringDelivery', 'StopMonitoringDelivery'];
+            for (const deliveryType of deliveryTypes) {
+                if (serviceDelivery[deliveryType] && serviceDelivery[deliveryType][0] && serviceDelivery[deliveryType][0].ErrorCondition) {
+                    const errorCondition = serviceDelivery[deliveryType][0].ErrorCondition;
+                    const errorMessage = errorCondition.Description || (errorCondition.OtherError && errorCondition.OtherError.ErrorText) || 'Unknown API Error';
+                    console.error(`MTA API Error in ${deliveryType}:`, errorMessage);
+                    this.showError(`MTA API Error: ${errorMessage}`);
+                    return;
+                }
+            }
+        }
         
         // Process the actual MTA API response
         if (data.Siri && data.Siri.ServiceDelivery && data.Siri.ServiceDelivery.StopMonitoringDelivery) {
             const stopMonitoring = data.Siri.ServiceDelivery.StopMonitoringDelivery[0];
-            console.log('Stop monitoring data:', stopMonitoring);
             
             if (stopMonitoring && stopMonitoring.MonitoredStopVisit && stopMonitoring.MonitoredStopVisit.length > 0) {
                 const busData = stopMonitoring.MonitoredStopVisit.map(visit => {
                     const vehicle = visit.MonitoredVehicleJourney;
-                    console.log('Vehicle data:', vehicle);
                     
                     // Handle different possible time fields
                     let arrivalTime;
@@ -107,36 +103,34 @@ class BusTracker {
                     } else if (vehicle.MonitoredCall.ExpectedArrivalTime) {
                         arrivalTime = new Date(vehicle.MonitoredCall.ExpectedArrivalTime);
                     } else {
-                        // Fallback to current time + random minutes
-                        arrivalTime = new Date(Date.now() + Math.random() * 20 * 60000);
+                        // This case might not be ideal, but it's a fallback.
+                        arrivalTime = new Date(); // Should not happen with real data
                     }
                     
                     const minutesFromNow = Math.round((arrivalTime - new Date()) / 60000);
                     
+                    // Make vehicleId more friendly by extracting the number
+                    let vehicleId = vehicle.VehicleRef || `M104_${Math.floor(Math.random() * 1000)}`;
+                    if (vehicleId.includes('_')) {
+                        vehicleId = vehicleId.split('_').pop();
+                    }
+
                     return {
-                        vehicleId: vehicle.VehicleRef || vehicle.VehicleLocationRef || `M104_${Math.floor(Math.random() * 1000)}`,
+                        vehicleId: vehicleId,
                         arrivalTime: arrivalTime,
                         minutesFromNow: Math.max(0, minutesFromNow)
                     };
                 }).filter(bus => bus.minutesFromNow >= 0).slice(0, 3);
                 
-                console.log('Processed bus data:', busData);
-                
                 if (busData.length > 0) {
                     this.displayBusTimes(busData);
                     return;
                 }
-            } else {
-                console.log('No monitored stop visits found');
             }
-        } else {
-            console.log('Unexpected API response structure:', data);
         }
         
-        // If we can't parse the data, fallback to mock
-        console.log('Falling back to mock data');
-        const mockData = this.getMockBusData();
-        this.displayBusTimes(mockData);
+        // If we have an API key but no buses are found or the data is unparsable.
+        this.busTimesContainer.innerHTML = '<div class="info">No upcoming buses found for this stop.</div>';
     }
     
     getMockBusData() {
@@ -166,12 +160,6 @@ class BusTracker {
             return;
         }
         
-        // Add data source indicator
-        const isRealData = this.apiKey && this.apiKey !== 'YOUR_API_KEY_HERE' && this.apiKey.length >= 10;
-        const dataSourceIndicator = isRealData ? 
-            '<div class="data-source real">🟢 Real MTA Data</div>' : 
-            '<div class="data-source mock">🟡 Demo Data</div>';
-        
         const busTimesHTML = busData.map((bus, index) => {
             const isArrivingSoon = bus.minutesFromNow <= 5;
             const timeClass = isArrivingSoon ? 'bus-time arriving-soon' : 'bus-time';
@@ -187,7 +175,7 @@ class BusTracker {
             `;
         }).join('');
         
-        this.busTimesContainer.innerHTML = dataSourceIndicator + busTimesHTML;
+        this.busTimesContainer.innerHTML = busTimesHTML;
     }
     
     showLoading() {

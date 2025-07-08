@@ -12,12 +12,10 @@ app.use(express.static('.'));
 // MTA API proxy endpoint to handle CORS
 app.get('/api/mta/stop-monitoring', async (req, res) => {
     try {
-        const { MonitoringRef, LineRef, DirectionRef } = req.query;
+        const apiKey = process.env.MTA_API_KEY || (typeof CONFIG !== 'undefined' && CONFIG.MTA_API_KEY) || "YOUR_API_KEY_HERE";
+        const mtaUrl = `https://bustime.mta.info/api/siri/stop-monitoring.json?key=${apiKey}&OperatorRef=MTA&MonitoringRef=404052&LineRef=MTA%NYCT_M20&MaximumStopVisits=3`;
         
-        // Build MTA API URL
-        const mtaUrl = `https://bustime.mta.info/api/siri/stop-monitoring.json?key=${process.env.MTA_API_KEY}&MonitoringRef=${MonitoringRef}&LineRef=${LineRef}&DirectionRef=${DirectionRef}`;
-        
-        console.log('Fetching from MTA API:', mtaUrl);
+        console.log('Fetching from MTA API:', mtaUrl.replace(apiKey, 'REDACTED_API_KEY'));
         
         const response = await fetch(mtaUrl);
         const data = await response.json();
@@ -53,10 +51,6 @@ app.get('/', (req, res) => {
         
         // Create environment variables object
         const envVars = {
-            MTA_API_KEY: process.env.MTA_API_KEY || '',
-            STOP_ID: process.env.STOP_ID || '404052',
-            ROUTE_ID: process.env.ROUTE_ID || 'M104',
-            DIRECTION: process.env.DIRECTION || 'N',
             REFRESH_INTERVAL: process.env.REFRESH_INTERVAL || 30000
         };
         
