@@ -4,12 +4,8 @@ A simple, modern web application that shows the next 3 northbound M104 bus times
 
 ## Features
 
-- 🚌 Real-time bus tracking for M104 route
+- 🚌 Real-time bus tracking for M20 route
 - 📍 Specific location: 41st Street & 8th Avenue (Northbound)
-- 🔄 Auto-refresh every 30 seconds
-- 📱 Responsive design for mobile and desktop
-- 🎨 Modern, clean UI with smooth animations
-- ⚡ Fast loading with fallback data
 
 ## Getting Started
 
